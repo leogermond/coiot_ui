@@ -5,19 +5,14 @@
 	<style>
 	.button {
 		display:inline-block;
-		border: 0;
-		background-color: #ccc;
+		border: solid 5px;
+		background-color: #ddd;
 		box-shadow: none;
 		border-radius: 10px;
 		width: 80px;
 		height:80px;
 		margin: 5px;
 		cursor: pointer;
-	}
-
-	.button:active {
-		background-color: #aaa;
-		border: 0;
 	}
 
 	.button > .light {
@@ -28,45 +23,35 @@
 		border: solid 5px #655;
 	}
 
-	.light.on {
-		background-color: #2d3;
+	.on {
+		border-color: #2d3;
 	}
 
-	.light.off {
-		background-color: #d85;
+	.off {
+		border-color: #f62;
 	}
 	</style>
 	<script type="text/javascript">
 	'use strict';
 
 	class Button {
-		constructor(imgurl,state=false) {
+		constructor(imgurl) {
 			this.handle = document.createElement('a');
-			this.handle.className = "button";
-			var img = document.createElement('img');
-			img.src = "/img/" + imgurl;
-			img.style.height = '45px';
-			img.style.margin = '5px';
-			img.style.marginLeft = '18px';
-			img.style.verticalAlign = 'middle';
-			this.handle.appendChild(img);
-			this.handle.state = state;
+			this.handle.className = "button off";
+			this.handle.style.backgroundImage = 'url("/img/' + imgurl + '")';
+			this.handle.style.backgroundSize = "contain";
+			this.handle.state = false;
 			this.handle.onmousedown = function() {
 				this.state = !this.state;
 				if(this.state) {
-					this.light.className = "light on";
-					this.img.src = this.img.src.replace('.', '_on.');
+					this.className = "button on";
+					this.style.backgroundImage = this.style.backgroundImage.replace('.', '_on.');
 				} else {
-					this.light.className = "light off";
-					this.img.src = this.img.src.replace('_on.', '.');
+					this.className = "button off";
+					this.style.backgroundImage = this.style.backgroundImage.replace('_on.', '.');
 				}
 			};
 
-			var l = document.createElement('div');
-			l.className = "light off";
-			this.handle.light = l;
-			this.handle.img = img;
-			this.handle.appendChild(l);
 			document.getElementById('render').appendChild(this.handle);
 		}
 	}
@@ -79,7 +64,7 @@
 	</script>
 </head>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=0">
-<body style="margin: 0; overflow:scroll;">
+<body style="margin: 0; overflow:scroll; background-color: #ffe">
 	<div id="render"></div>
 
 	<script type="text/javascript" defer="defer">
