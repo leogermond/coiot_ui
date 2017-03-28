@@ -1,0 +1,89 @@
+<html>
+<meta charset="utf-8" />
+<head>
+	<title>COIoT Home</title>
+	<style>
+	.button {
+		display:inline-block;
+		border: 0;
+		background-color: #ccc;
+		box-shadow: none;
+		border-radius: 10px;
+		width: 80px;
+		height:80px;
+		margin: 5px;
+		cursor: pointer;
+	}
+
+	.button:active {
+		background-color: #aaa;
+		border: 0;
+	}
+
+	.button > .light {
+		position: relative;
+		width: 60px;
+		left: 5px;
+		height: 10px;
+		border: solid 5px #655;
+	}
+
+	.light.on {
+		background-color: #2d3;
+	}
+
+	.light.off {
+		background-color: #d85;
+	}
+	</style>
+	<script type="text/javascript">
+	'use strict';
+
+	class Button {
+		constructor(imgurl,state=false) {
+			this.handle = document.createElement('a');
+			this.handle.className = "button";
+			var img = document.createElement('img');
+			img.src = "/img/" + imgurl;
+			img.style.height = '45px';
+			img.style.margin = '5px';
+			img.style.marginLeft = '18px';
+			img.style.verticalAlign = 'middle';
+			this.handle.appendChild(img);
+			this.handle.state = state;
+			this.handle.onmousedown = function() {
+				this.state = !this.state;
+				if(this.state) {
+					this.light.className = "light on";
+					this.img.src = this.img.src.replace('.', '_on.');
+				} else {
+					this.light.className = "light off";
+					this.img.src = this.img.src.replace('_on.', '.');
+				}
+			};
+
+			var l = document.createElement('div');
+			l.className = "light off";
+			this.handle.light = l;
+			this.handle.img = img;
+			this.handle.appendChild(l);
+			document.getElementById('render').appendChild(this.handle);
+		}
+	}
+
+	function main() {
+		var b1 = new Button("oven_2.png");
+		var b2 = new Button("light_2.png");
+		var b2 = new Button("coffee_machine_2.png");
+	}
+	</script>
+</head>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=0">
+<body style="margin: 0; overflow:scroll;">
+	<div id="render"></div>
+
+	<script type="text/javascript" defer="defer">
+	main();
+	</script>
+</body>
+</html>
