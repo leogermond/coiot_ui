@@ -1,8 +1,40 @@
 #!/usr/bin/env python
 
+import ws
 import http.server
 import socketserver
+import json
+
+class CoiotServer(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, request, client_address, server):
+        self.ws = ws.CoiotWs()
+        super(CoiotServer, self).__init__(request, client_address, server)
+
+    def ws_serve(self):
+        response = json.dumps(self.ws.serve(self.path)).encode('utf-8')
+
+        self.send_response(200)
+        if response != None:
+            self.send_header("Content-type", "application/json")
+            self.send_header("Content-length", len(response))
+        self.end_headers()
+        if response != None:
+            self.wfile.write(response)
+
+    def do_GET(self):
+        self.path = self.path.replace("../", "")
+        if self.path.replace("/", "") == "":
+            self.path = "/html/index.html"
+        elif self.path.startswith("/img/"):
+            pass
+        elif self.path.startswith("/ws/"):
+            self.ws_serve()
+            return
+        else:
+            self.send_error(404)
+            return
+        super(CoiotServer, self).do_GET()
 
 if __name__ == "__main__":
-    with socketserver.TCPServer(("",8000),  http.server.SimpleHTTPRequestHandler) as s:
+    with http.server.HTTPServer(("", 8000), CoiotServer) as s:
         s.serve_forever()
