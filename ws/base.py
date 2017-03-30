@@ -25,22 +25,20 @@ class CoiotWs:
     def __init__(self):
         pass
 
+    def route_sub_get(self, path, name, description, **accept):
+        if len(path) == 0:
+            return {'name': name, 'description': description, 'accept': list(accept.keys())}
+        p, psub = path[0], path[1:]
+        for k,v in accept.items():
+            if p == k:
+                return v[0](psub, *v[1])
+        raise OSError("unsupported "+name+": "+ p)
+
     def get_single_device(self, path, d):
-        if len(path) == 1:
-            return {
-                    "name": "attribute",
-                    "accept": list(d.keys()) + ["*"],
-                    "description": "attribute to get from the device"
-                    }
-        p = path[1]
-        if p == "*":
-            return {n: v if not callable(v) else v(d) for (n,v) in d.items() }
-        elif p in d.keys():
-            a = d[p]
-            if callable(a):
-                return a(d)
-            return a
-        raise OSError("unknown attribute: " + p)
+        return self.route_sub_get(path,
+                "attribute", "attribute to get from the device",
+                **{ k: (lambda p, d, a: a(d) if callable(a) else a, [d, v]) for (k,v) in d.items() },
+                **{"*": (lambda p, d: {n: v if not callable(v) else v(d) for (n,v) in d.items() }, [d])})
 
     def set_single_device(self, path, data, d):
         if path[1] == "*":
@@ -55,20 +53,10 @@ class CoiotWs:
             raise OSError("unknown attribute: " + path[1])
 
     def get_device(self, path, devices):
-        if len(path) == 0:
-            return {
-                    "name": "device",
-                    "accept": list(devices.keys()) + ["*"],
-                    "description": "device from which to get an attribute"
-                    }
-        elif path[0] in devices.keys():
-            return self.get_single_device(path, devices[path[0]])
-        elif path[0] == "*":
-            a={}
-            for i,d in devices.items():
-                a[i] = self.get_single_device(path, d)
-            return a
-        raise OSError("unknown device: " + path[0])
+        return self.route_sub_get(path,
+                "device", "device from which to get an attribute",
+                **{ k: (self.get_single_device, [v]) for (k,v) in devices.items() },
+                **{"*": (lambda p, d: {k: self.get_single_device(p, v) for (k,v) in d.items() }, [devices])})
 
     def set_device(self, path, data, devices):
         if path[0] in devices.keys():
@@ -81,33 +69,25 @@ class CoiotWs:
         raise OSError("unknown device: " + path[0])
 
     def get_v1(self, path):
-        if len(path) == 0:
-            return { "name": "category",
-                    "accept": ["device"],
-                    "description": "category of the attribute to get"
-                    }
-        elif path[0] == "device":
-            return self.get_device(path[1:], devices)
-        raise OSError("unknown category: " + path[0])
+        return self.route_sub_get(path,
+                "category", "category of attribute to get",
+                device = (self.get_device, [devices]))
 
     def set_v1(self, path, data):
-        if path[0] == "device":
-            return self.set_device(path[1:], data, devices)
-        raise OSError("unknown category: " + path[0])
+        p, psub = path[0], path[1:]
+        if p == "device":
+            return self.set_device(psub, data, devices)
+        raise OSError("unknown category: " + p)
 
     def get(self, request):
         path = [p for p in request.split("/") if p != ""]
-        if len(path) == 1:
-            return { "name": "version",
-                    "accept": ["v1"],
-                    "description": "version of the protocol to use"
-                    }
-        elif path[1] == "v1":
-            return self.get_v1(path[2:])
-        raise OSError("unsuported protocol version: " + path[1])
+        return self.route_sub_get(path[1:],
+                "version", "version of the protocol to use",
+                v1 = (self.get_v1, []))
 
     def set(self, request, data):
         path = [p for p in request.split("/") if p != ""]
-        if path[1] == "v1":
-            return self.set_v1(path[2:], data)
-        raise OSError("unsuported protocol version: " + path[1])
+        p, psub = path[1], path[2:]
+        if p == "v1":
+            return self.set_v1(psub, data)
+        raise OSError("unsuported protocol version: " + p)
