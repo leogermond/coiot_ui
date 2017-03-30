@@ -52,7 +52,7 @@
 			http_async('GET', '/ws/v1/device/'+id+'/*', function(js) {
 				var device = find_device(id);
 				console.log("update #"+id);
-				device.refresh(js['image'], js['on']);
+				device.refresh_js(js);
 			});
 		};
 	}
@@ -77,7 +77,11 @@
 		refresh(imgurl, on) {
 			this.handle.state = on;
 			this.handle.className = "button " + (this.handle.state?"on":"off");
-			this.handle.style.backgroundImage = 'url("/img/' + imgurl + '")';
+			this.handle.style.backgroundImage = 'url("/img/'+ imgurl +'")';
+		}
+
+		refresh_js(js) {
+			this.refresh(js['image'], js['on']);
 		}
 	}
 
@@ -113,8 +117,26 @@
 		}
 	}
 
+	function refresh_devices_cb(js) {
+		for(var id in js) {
+			var added = [];
+			try {
+				var device = find_device(id);
+			} catch(e) {
+				added.push(id);
+			}
+			console.log("update #"+id);
+			device.refresh_js(js[id]);
+		}
+	}
+
+	function refresh_all() {
+		http_async('GET', '/ws/v1/device/*/*', refresh_devices_cb);
+	}
+
 	function main() {
 		http_async('GET', '/ws/v1/device/*/*', add_devices_cb);
+		setInterval(refresh_all, 500);
 	}
 	</script>
 </head>
