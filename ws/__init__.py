@@ -1,1 +1,1 @@
-from .base import CoiotWs
+from .base import CoiotWs, CoiotWsError

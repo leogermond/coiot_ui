@@ -21,6 +21,20 @@ devices = {
         }
 }
 
+class CoiotWsError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
+        self.code = 500
+
+class SubNotFound(CoiotWsError):
+    def __init__(self, name, value, accept):
+        super().__init__("unknown "+name+": "+value)
+        self.name = name
+        self.value = value
+        self.accept = accept
+        self.code = 404
+
 class CoiotWs:
     def __init__(self):
         pass
@@ -32,7 +46,7 @@ class CoiotWs:
         for k,v in accept.items():
             if p == k:
                 return v[0](psub, *v[1])
-        raise OSError("unsupported "+name+": "+ p)
+        raise SubNotFound(name, p, accept)
 
     def get_single_device(self, path, d):
         return self.route_sub_get(path,
