@@ -10,16 +10,24 @@ class CoiotServer(http.server.SimpleHTTPRequestHandler):
         self.ws = ws.CoiotWs()
         super(CoiotServer, self).__init__(request, client_address, server)
 
-    def ws_serve(self):
-        response = json.dumps(self.ws.serve(self.path)).encode('utf-8')
+    def ws_get(self):
+        response = json.dumps(self.ws.get(self.path)).encode('utf-8')
 
-        self.send_response(200)
-        if response != None:
+        if response == None:
+            self.send_response(204)
+            self.end_headers()
+        else:
+            self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.send_header("Content-length", len(response))
-        self.end_headers()
-        if response != None:
+            self.end_headers()
             self.wfile.write(response)
+
+    def ws_set(self):
+        r = self.rfile.read(int(self.headers.get("Content-Length"))).decode('utf-8')
+        self.ws.set(self.path, json.loads(r))
+        self.send_response(204)
+        self.end_headers()
 
     def do_GET(self):
         self.path = self.path.replace("../", "")
@@ -28,12 +36,18 @@ class CoiotServer(http.server.SimpleHTTPRequestHandler):
         elif self.path.startswith("/img/"):
             pass
         elif self.path.startswith("/ws/"):
-            self.ws_serve()
+            self.ws_get()
             return
         else:
             self.send_error(404)
             return
         super(CoiotServer, self).do_GET()
+
+    def do_PUT(self):
+        if self.path.startswith("/ws/"):
+            self.ws_set()
+            return
+        super(CoiotServer, self).do_PUT()
 
 if __name__ == "__main__":
     with http.server.HTTPServer(("", 8000), CoiotServer) as s:

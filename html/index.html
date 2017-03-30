@@ -34,32 +34,87 @@
 	<script type="text/javascript">
 	'use strict';
 
+	var devices = [];
+
+	function find_device(id) {
+		var dlen = devices.length;
+		for(var i = 0; i < dlen; i++) {
+			var device = devices[i];
+			if(device.id == id) {
+				return device;
+			}
+		}
+		throw Error("no such device "+id);
+	}
+
+	function put_device_refresh_cb(id) {
+		return function(txt) {
+			http_async('GET', '/ws/v1/device/'+id+'/*', function(js) {
+				var device = find_device(id);
+				console.log("update #"+id);
+				device.refresh(js['image'], js['on']);
+			});
+		};
+	}
+
 	class Device {
-		constructor(imgurl) {
+		constructor(id, imgurl, on) {
+			this.id = id;
 			this.handle = document.createElement('a');
-			this.handle.className = "button off";
-			this.handle.style.backgroundImage = 'url("/img/' + imgurl + '")';
+			this.handle.className = "button " + (this.handle.state?"on":"off");
 			this.handle.style.backgroundSize = "contain";
-			this.handle.state = false;
 			this.handle.onmousedown = function() {
 				this.state = !this.state;
-				if(this.state) {
-					this.className = "button on";
-					this.style.backgroundImage = this.style.backgroundImage.replace('.', '_on.');
-				} else {
-					this.className = "button off";
-					this.style.backgroundImage = this.style.backgroundImage.replace('_on.', '.');
-				}
+				http_async('PUT', '/ws/v1/device/'+id+'/on',
+					put_device_refresh_cb(id),
+					this.state);
 			};
+			this.refresh(imgurl, on);
 
 			document.getElementById('render').appendChild(this.handle);
+		}
+
+		refresh(imgurl, on) {
+			this.handle.state = on;
+			this.handle.className = "button " + (this.handle.state?"on":"off");
+			this.handle.style.backgroundImage = 'url("/img/' + imgurl + '")';
+		}
+	}
+
+	function http_async(verb, url, callback, arg) {
+		var xmlHttp = new XMLHttpRequest();
+		xmlHttp.onreadystatechange = function() {
+			if (xmlHttp.readyState == 4) {
+				switch(xmlHttp.status) {
+				case 200:
+					callback(JSON.parse(xmlHttp.responseText));
+					break;
+				case 204:
+					callback(undefined);
+					break;
+				}
+			}
+		}
+		xmlHttp.open(verb, url, true);
+		if(arg === undefined) {
+			xmlHttp.send(null);
+		} else {
+			var res = JSON.stringify(arg);
+			xmlHttp.setRequestHeader("Content-Type", "application/json");
+			xmlHttp.send(res);
+		}
+	}
+
+	function add_devices_cb(js) {
+		for(var id in js) {
+			var device = js[id];
+			console.log("add #"+id);
+			devices.push(new Device(id, device['image'], device['on']));
 		}
 	}
 
 	function main() {
-		var b1 = new Device("oven_2.png");
-		var b2 = new Device("light_2.png");
-		var b2 = new Device("coffee_machine_2.png");
+		http_async('GET', '/ws/v1/device/*/*', add_devices_cb);
 	}
 	</script>
 </head>
