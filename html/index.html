@@ -34,6 +34,54 @@
 	<script type="text/javascript">
 	'use strict';
 
+	/* detect focus / out of focus
+	source: http://stackoverflow.com/a/1060034/647828
+	*/
+	(function() {
+		var hidden = "hidden";
+
+		// Standards:
+		if (hidden in document)
+			document.addEventListener("visibilitychange", onchange);
+		else if ((hidden = "mozHidden") in document)
+			document.addEventListener("mozvisibilitychange", onchange);
+		else if ((hidden = "webkitHidden") in document)
+			document.addEventListener("webkitvisibilitychange", onchange);
+		else if ((hidden = "msHidden") in document)
+			document.addEventListener("msvisibilitychange", onchange);
+		// IE 9 and lower:
+		else if ("onfocusin" in document)
+			document.onfocusin = document.onfocusout = onchange;
+		// All others:
+		else
+			window.onpageshow = window.onpagehide
+				= window.onfocus = window.onblur = onchange;
+
+		function onchange (evt) {
+			var evtMap = {
+				focus:true, focusin:true, pageshow:true, blur:false, focusout:false, pagehide:false
+			};
+
+			evt = evt || window.event;
+			var visible;
+			if (evt.type in evtMap) {
+				visible = evtMap[evt.type];
+			} else {
+				visible = !this[hidden];
+			}
+
+			if(visible) {
+				start_autorefresh();
+			} else {
+				stop_autorefresh();
+			}
+		}
+
+		// set the initial state (but only if browser supports the Page Visibility API)
+		if( document[hidden] !== undefined )
+			onchange({type: document[hidden] ? "blur" : "focus"});
+	})();
+
 	var devices = [];
 
 	function find_device(id) {
@@ -134,9 +182,28 @@
 		http_async('GET', '/ws/v1/device/*/*', refresh_devices_cb);
 	}
 
+	var refresh_interval;
+
+	function start_autorefresh() {
+		if(refresh_interval !== undefined) {
+			return;
+		}
+		console.log("autorefresh on");
+		refresh_all();
+		refresh_interval = setInterval(refresh_all, 500);
+	}
+
+	function stop_autorefresh() {
+		if(refresh_interval === undefined) {
+			return;
+		}
+		console.log("autorefresh off");
+		clearInterval(refresh_interval);
+		refresh_interval = undefined;
+	}
+
 	function main() {
 		http_async('GET', '/ws/v1/device/*/*', add_devices_cb);
-		setInterval(refresh_all, 500);
 	}
 	</script>
 </head>
