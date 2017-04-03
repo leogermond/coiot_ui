@@ -25,8 +25,11 @@ class CoiotServer(http.server.SimpleHTTPRequestHandler):
 
     def ws_set(self):
         r = self.rfile.read(int(self.headers.get("Content-Length"))).decode('utf-8')
-        self.ws.set(self.path, json.loads(r))
-        self.send_response(204)
+        if r:
+            self.ws.set(self.path, json.loads(r))
+            self.send_response(204)
+        else:
+            self.send_error(400, "PUT requires a value")
         self.end_headers()
 
     def do_GET(self):

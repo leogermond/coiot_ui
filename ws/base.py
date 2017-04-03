@@ -35,6 +35,13 @@ class SubNotFound(CoiotWsError):
         self.accept = accept
         self.code = 404
 
+class SubReadOnly(CoiotWsError):
+    def __init__(self, name, accept):
+        super().__init__("cannot set "+name)
+        self.name = name
+        self.accept = accept
+        self.code = 400
+
 class CoiotWs:
     def __init__(self):
         pass
@@ -50,6 +57,7 @@ class CoiotWs:
 
     def route_sub_set(self, path, data, name, **accept):
         if len(path) == 0:
+            raise SubReadOnly(name, accept)
             return {'name': name, 'description': description, 'accept': list(accept.keys())}
         p, psub = path[0], path[1:]
         for k,v in accept.items():
