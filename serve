@@ -36,6 +36,8 @@ class CoiotServer(http.server.SimpleHTTPRequestHandler):
         self.path = self.path.replace("../", "")
         if self.path.replace("/", "") == "":
             self.path = "/html/index.html"
+        elif self.path == "/favicon.ico":
+            self.path = "/img/" + self.path
         elif self.path.startswith("/img/"):
             pass
         elif self.path.startswith("/ws/"):
